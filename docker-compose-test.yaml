@@ -1,0 +1,66 @@
+version: "3.7"
+
+volumes:
+  localvolume:
+    name: "localvolume"
+    driver: "local"
+
+networks:
+  dev_network:
+    driver: bridge
+
+services:
+  rabbitmq:
+    image: rabbitmq:latest
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      - dev_network
+#   environment:
+#      RABBITMQ_DEFAULT_VHOST: 
+
+#  redis:
+#    image: redis:latest
+#    container_name: redis
+#    ports:
+#      - 6379:6379
+#    networks:
+#      - dev_network
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_DATABASE: "db"
+      #MONGO_INITDB_ROOT_USERNAME: "root"
+      #MONGO_INITDB_ROOT_PASSWORD: "myBigDevPassword!"
+
+    ports:
+      - 27017:27017
+    volumes:
+      - localvolume:/data/db
+    networks:
+      - dev_network
+
+# smtp:
+#     image: mailhog/mailhog
+#     container_name: 'mailhog'
+#     ports:
+#       - "25:1025"
+#       - "8025:8025"
+
+  server:
+    image: tadmcclellan/modmeanstorm
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mongodb
+    environment:
+      PORT: 80
+      MONGODB: "mongodb://mongodb:27017/modmeanstorm"
+      NODE_ENV: "production"
+    ports:
+      - "8080:80"
+    networks:
+      - dev_network
